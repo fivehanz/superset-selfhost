@@ -1,0 +1,62 @@
+services:
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    networks:
+      - superset-net
+    environment:
+      SUPERSET_ENV: production
+      SUPERSET_LOAD_EXAMPLES: "no"
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY} # Use Docker secrets in production
+      SUPERSET_PORT: 8088
+      SUPERSET_DATABASE_URL: "postgresql+psycopg2://superset:superset@db:5432/superset"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+    ports:
+      - "8088:8088"
+    volumes:
+      - /opt/apps/persistence/superset:/app/superset_home
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: superset-redis
+    networks:
+      - superset-net
+    restart: unless-stopped
+    # ports:
+      # - "6379:6379"
+    volumes:
+      - superset_redis_data:/data
+
+  db:
+    image: postgres:16-alpine
+    container_name: superset-db
+    restart: unless-stopped
+    networks:
+      - superset-net
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      PGDATA: /var/lib/postgresql/data
+    # ports:
+      # - "5432:5432"
+    volumes:
+      - /opt/databases/prod/superset/postgresql/data:/var/lib/postgresql/data
+
+volumes:
+  superset_redis_data:
+
+networks:
+  superset-net:
+    driver: bridge
+
