@@ -4,13 +4,13 @@ nginx-init: prod-nginx-link
 
 
 ### PRODUCTION COMMANDS
-prod-start:
+start:
 	docker compose --env-file .env --file ./docker-compose.yml up -d
-prod-rebuild:
+rebuild:
 	docker compose --env-file .env --file ./docker-compose.yml up -d --build
-prod-restart:
+restart:
 	docker compose --env-file .env --file ./docker-compose.yml up -d --force-recreate	
-prod-stop:
+stop:
 	docker compose --env-file .env --file ./docker-compose.yml down
 
 prod-nginx-link:
