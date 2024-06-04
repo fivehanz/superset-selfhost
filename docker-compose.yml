@@ -1,9 +1,9 @@
-# @source: https://github.com/apache/superset/blob/master/docker-compose-non-dev.yml
+### @source: https://github.com/apache/superset/blob/master/docker-compose-non-dev.yml
 
 x-superset-volumes:
-  &superset-volumes # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+  &superset-volumes
+  - persistence_superset:/app/superset_home
   - ./docker:/app/docker
-  - /opt/apps/persistence/superset:/app
 
 x-superset-envs:
   &superset-envs
@@ -106,6 +106,7 @@ services:
 
 volumes:
   superset_redis_data:
+  persistence_superset:
 
 networks:
   superset-net:
