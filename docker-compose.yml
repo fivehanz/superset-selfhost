@@ -5,22 +5,25 @@ x-superset-volumes:
   - ./docker:/app/docker
   - /opt/apps/persistence/superset:/app/superset_home
 
+x-superset-envs:
+  &superset-envs
+    SUPERSET_ENV: production
+    SUPERSET_LOAD_EXAMPLES: "no"
+    SECRET_KEY: ${SUPERSET_SECRET_KEY} # Use Docker secrets in production
+    SUPERSET_PORT: 8088
+    DATABASE_URL: "postgresql://superset:superset@db:5432/superset"
+    REDIS_HOST: "redis"
+    REDIS_PORT: "6379"
+    CELERY_BROKER_URL: "redis://redis:6379/1"
+    CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+
 services:
   superset:
     image: apache/superset:latest
     container_name: superset
     networks:
       - superset-net
-    environment:
-      SUPERSET_ENV: production
-      SUPERSET_LOAD_EXAMPLES: "no"
-      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY} # Use Docker secrets in production
-      SUPERSET_PORT: 8088
-      SUPERSET_DATABASE_URL: "postgresql+psycopg2://superset:superset@db:5432/superset"
-      REDIS_HOST: "redis"
-      REDIS_PORT: "6379"
-      CELERY_BROKER_URL: "redis://redis:6379/1"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    environment: *superset-envs
     env_file:
       - path: ./.env # default
         required: true
@@ -43,9 +46,7 @@ services:
     command: celery --app=superset.tasks.celery_app:app beat -l INFO
     networks:
       - superset-net
-    environment:
-      CELERY_BROKER_URL: "redis://redis:6379/1"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    environment: *superset-envs
     env_file:
       - path: ./.env 
         required: true
@@ -61,9 +62,7 @@ services:
     command: celery --app=superset.tasks.celery_app:app worker -O fair -l INFO --concurrency=${CELERYD_CONCURRENCY:-2}
     networks:
       - superset-net
-    environment:
-      CELERY_BROKER_URL: "redis://redis:6379/1"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    environment: *superset-envs
     env_file:
       - path: ./.env 
         required: true
