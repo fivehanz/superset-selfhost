@@ -1,0 +1,7 @@
+clickhouse-connect
+sqlalchemy-bigquery
+shillelagh[gsheetsapi]
+psycopg2
+mysqlclient
+redis
+

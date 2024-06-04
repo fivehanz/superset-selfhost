@@ -1,3 +1,10 @@
+# @source: https://github.com/apache/superset/blob/master/docker-compose-non-dev.yml
+
+x-superset-volumes:
+  &superset-volumes # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+  - ./docker:/app/docker
+  - /opt/apps/persistence/superset:/app/superset_home
+
 services:
   superset:
     image: apache/superset:latest
@@ -12,10 +19,14 @@ services:
       SUPERSET_DATABASE_URL: "postgresql+psycopg2://superset:superset@db:5432/superset"
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    env_file:
+      - path: ./.env # default
+        required: true
     ports:
       - "8088:8088"
-    volumes:
-      - /opt/apps/persistence/superset:/app/superset_home
+    volumes: *superset-volumes
     restart: unless-stopped
     depends_on:
       - db
@@ -26,14 +37,52 @@ services:
       timeout: 10s
       retries: 5
 
+  celery_beat:
+    image: apache/superset:latest
+    container_name: superset_celery_beat
+    command: celery --app=superset.tasks.celery_app:app beat -l INFO
+    networks:
+      - superset-net
+    environment:
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    env_file:
+      - path: ./.env 
+        required: true
+    volumes: *superset-volumes
+    depends_on:
+      - redis
+    healthcheck:
+      disable: true
+
+  celery_worker:
+    image: apache/superset:latest
+    container_name: superset_celery_worker
+    command: celery --app=superset.tasks.celery_app:app worker -O fair -l INFO --concurrency=${CELERYD_CONCURRENCY:-2}
+    networks:
+      - superset-net
+    environment:
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+    env_file:
+      - path: ./.env 
+        required: true
+    volumes: *superset-volumes
+    depends_on:
+      - redis
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
+        ]
+
   redis:
     image: redis:alpine
     container_name: superset-redis
     networks:
       - superset-net
     restart: unless-stopped
-    # ports:
-      # - "6379:6379"
     volumes:
       - superset_redis_data:/data
 
@@ -48,8 +97,6 @@ services:
       POSTGRES_USER: superset
       POSTGRES_PASSWORD: superset
       PGDATA: /var/lib/postgresql/data
-    # ports:
-      # - "5432:5432"
     volumes:
       - /opt/databases/prod/superset/postgresql/data:/var/lib/postgresql/data
 
@@ -59,4 +106,3 @@ volumes:
 networks:
   superset-net:
     driver: bridge
-
