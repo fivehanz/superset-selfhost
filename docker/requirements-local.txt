@@ -3,3 +3,4 @@ sqlalchemy-bigquery
 psycopg2
 mysqlclient
 redis
+cachelib<9
