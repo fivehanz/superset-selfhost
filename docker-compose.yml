@@ -50,7 +50,7 @@ services:
   celery_beat:
     image: apache/superset:latest
     container_name: superset_celery_beat
-    command: celery --app=superset.tasks.celery_app:app beat -l INFO -s /app/celerybeat-schedule
+    command: celery --app=superset.tasks.celery_app:app beat -l INFO -s /tmp/celerybeat-schedule
     networks:
       - superset-net
     environment: *superset-envs

@@ -1,3 +1,10 @@
+import os
+
+# Get Redis host and port from environment variables
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+
+
 from flask_talisman import Talisman
 
 TALISMAN_ENABLED = False
@@ -15,5 +22,5 @@ TALISMAN_ENABLED = False
 CONTENT_SECURITY_POLICY_WARNING = False
 
 RATELIMIT_ENABLED = True
-RATELIMIT_STORAGE_URL = "redis://redis:6379/3"
+RATELIMIT_STORAGE_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/3'
 
