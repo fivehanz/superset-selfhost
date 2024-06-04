@@ -4,6 +4,7 @@ x-superset-volumes:
   &superset-volumes
   - persistence_superset:/app/superset_home
   - ./docker:/app/docker
+  - ./superset_config.py:/app/pythonpath_docker/superset_config.py
 
 x-superset-envs:
   &superset-envs
